@@ -4,18 +4,20 @@
 #include <process.h>
 #include <malloc.h>
 
+#include "stringex.h"
 #include "httpd.h"
 
 
+
 typedef struct tagHTTPREQUEST{
-	unsigned char *method;
-	unsigned char *path;
-	unsigned char *version;
+	char *method;
+	char *path;
+	char *version;
 } HTTPREQUEST;
 
 void __cdecl HTTPServerDaemonThread(void *p);
 void __cdecl HTTPServerRequestThread(void *p);
-HTTPREQUEST *HTTPRequestTokenizer(unsigned char *request, unsigned int requestLength);
+HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength);
 
 //Starting HTTP server daemon thread
 int StartHTTPServerDaemon(){
@@ -106,13 +108,16 @@ void __cdecl HTTPServerRequestThread(void *p){
 	
 	fprintf(stderr, "%s", recvBuf);
 	
+	HTTPRequestTokenizer(recvBuf, recvSize);
+	
 	closesocket(clientSock);
 	return;
 }
 
 //HTTP request tokenizer
-HTTPREQUEST *HTTPRequestTokenizer(unsigned char *request, unsigned int requestLength){
+HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	HTTPREQUEST *pHTTPRequest;
+	int endOfLine,current,nextLength;
 	
 	pHTTPRequest = (HTTPREQUEST *)malloc(sizeof(HTTPREQUEST));
 	if(pHTTPRequest == NULL){
@@ -120,8 +125,75 @@ HTTPREQUEST *HTTPRequestTokenizer(unsigned char *request, unsigned int requestLe
 		return NULL;
 	}
 	
-	//!FIXME
+	current = 0;
 	
+	//Start-line tokenize
+	
+	//Get the end of line
+	endOfLine = searchString(pRequest, requestLength, "\r\n");
+	if(endOfLine == -1){
+		fprintf(stderr, "Can not tokenize HTTP request.\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	//Get request method
+	nextLength = searchString(pRequest, endOfLine, " ");
+	if(nextLength == -1){
+		fprintf(stderr, "Can not tokenize HTTP request(method name).\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	pHTTPRequest->method = (char *)malloc(nextLength + 1);
+	if(pHTTPRequest->method == NULL){
+		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(method name).\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	memset(pHTTPRequest->method, 0, (nextLength + 1));
+	memmove(pHTTPRequest->method, pRequest, nextLength);
+	
+	current = nextLength + 1;
+	
+	//Get request path
+	nextLength = searchString((pRequest + current), endOfLine - current, " ");
+	if(nextLength == -1){
+		fprintf(stderr, "Can not tokenize HTTP request(path).\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	pHTTPRequest->path = (char *)malloc(nextLength + 1);
+	if(pHTTPRequest->path == NULL){
+		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(path).\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	memset(pHTTPRequest->path, 0, (nextLength + 1));
+	memmove(pHTTPRequest->path, (pRequest + current), nextLength);
+	
+	current += nextLength + 1;
+	
+	//Get HTTP version
+	nextLength = endOfLine - current;
+	pHTTPRequest->version = (char *)malloc(nextLength + 1);
+	if(pHTTPRequest->version == NULL){
+		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(HTTP version).\n");
+		free(pHTTPRequest);
+		return NULL;
+	}
+	
+	memset(pHTTPRequest->version, 0, (nextLength + 1));
+	memmove(pHTTPRequest->version, (pRequest + current), nextLength);
+	
+	fprintf(stderr, "%s", pHTTPRequest->version);
+	
+	current += nextLength + 2
+	
+	;
 	return pHTTPRequest;
 }
 

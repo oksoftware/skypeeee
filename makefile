@@ -4,7 +4,7 @@ CFLAGS = -Wall -DWIN32
 LDFLAGS = -lws2_32
 
 TARGET = skypeeee.exe
-OBJS = skypeeee.o strque.o httpd.o
+OBJS = skypeeee.o strque.o httpd.o stringex.o
 
 $(TARGET) : $(OBJS)
 	$(CC) -o $(TARGET) $(OBJS) $(LDFLAGS) $(CFLAGS)
@@ -21,3 +21,5 @@ skypeeee.o : skypeeee.c
 strque.o : strque.c strque.h
 
 httpd.o : httpd.c httpd.h
+
+stringex.o : stringex.c stringex.h

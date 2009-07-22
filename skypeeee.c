@@ -96,6 +96,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	WNDCLASSEX wndClassEx;
 	MSG msg;
 	
+	
 	//Create a window class
 	wndClassEx.cbSize = sizeof(WNDCLASSEX);
 	wndClassEx.style = 0;
@@ -123,6 +124,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		fprintf(stderr, "Can not create the window.\n");
 		return FALSE;
 	}
+	
 	
 	//Create Skype API message que
 	pSkypeAPIMessageRead = newStrQue();
