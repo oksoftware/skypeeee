@@ -135,7 +135,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	//Start-line tokenize
 	
 	//Get the end of line
-	endOfLine = searchString(pRequest, requestLength, "\r\n");
+	endOfLine = searchString(0, pRequest, requestLength, "\r\n");
 	if(endOfLine == -1){
 		fprintf(stderr, "Can not tokenize HTTP request.\n");
 		free(pHTTPRequest);
@@ -143,7 +143,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	}
 	
 	//Get request method
-	nextLength = searchString(pRequest, endOfLine, " ");
+	nextLength = searchString(0, pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(method name).\n");
 		free(pHTTPRequest);
@@ -163,7 +163,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	current = nextLength + 1;
 	
 	//Get request path
-	nextLength = searchString((pRequest + current), endOfLine - current, " ");
+	nextLength = searchString(current, pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(path).\n");
 		free(pHTTPRequest);
