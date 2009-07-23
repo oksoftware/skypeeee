@@ -123,6 +123,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	pHTTPRequest->method = NULL;
 	pHTTPRequest->path = NULL;
 	pHTTPRequest->version = NULL;
+	pHTTPRequest->header = NULL;
 	
 	current = 0;
 	
@@ -220,6 +221,10 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		return NULL;
 	}
 	
+	pPreviousHTTPRequestHeader->name = NULL;
+	pPreviousHTTPRequestHeader->value = NULL;
+	pPreviousHTTPRequestHeader->next = NULL;
+	
 	//Get end of line
 	endOfLine = searchString(current, pRequest, endOfRequestHeaders, "\r\n");
 	if(endOfLine == -1){
@@ -233,10 +238,25 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 }
 
 void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
+	HTTPREQUESTHEADER *pNextHTTPRequestHeader, *pHTTPRequestHeader;
 	free(pHTTPRequest->method);
 	free(pHTTPRequest->path);
 	free(pHTTPRequest->version);
+
+	//Free HTTPREQUESTHEADERs
+	pHTTPRequestHeader = pHTTPRequest->header;
 	
+	while(1){
+		if(pHTTPRequestHeader != NULL){
+			pNextHTTPRequestHeader = pHTTPRequestHeader->next;
+			free(pHTTPRequestHeader);
+		}else{
+			break;
+		}
+		pHTTPRequestHeader = pNextHTTPRequestHeader;
+	}
+	
+	free(pHTTPRequest->header);
 	free(pHTTPRequest);
 	return;
 }
