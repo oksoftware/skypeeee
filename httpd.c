@@ -8,6 +8,11 @@
 #include "httpd.h"
 
 
+typedef struct tagHTTPREQUESTHEADER{
+	char *name;
+	char *value;
+	struct tagHTTPREQUESTHEADER *next;
+}HTTPREQUESTHEADER;
 
 typedef struct tagHTTPREQUEST{
 	char *method;
@@ -191,9 +196,12 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	
 	fprintf(stderr, "%s", pHTTPRequest->version);
 	
-	current += nextLength + 2
+	current += nextLength + 2;
 	
-	;
+	//Get HTTP request headers
+	
+	
+	
 	return pHTTPRequest;
 }
 
