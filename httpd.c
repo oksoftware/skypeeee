@@ -195,10 +195,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	memset(pHTTPRequest->version, 0, (nextLength + 1));
 	memmove(pHTTPRequest->version, (pRequest + current), nextLength);
 	
-	fprintf(stderr, "%s", pHTTPRequest->version);
-	
 	current += nextLength + 2;
-	
 	//Get HTTP request headers
 	
 	//Get end of request headers
@@ -221,6 +218,8 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		return NULL;
 	}
 	
+	pHTTPRequest->header = pPreviousHTTPRequestHeader;
+	
 	pPreviousHTTPRequestHeader->name = NULL;
 	pPreviousHTTPRequestHeader->value = NULL;
 	pPreviousHTTPRequestHeader->next = NULL;
@@ -234,6 +233,47 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		return NULL;
 	}
 	
+	//Get HTTP request header name
+	//FIXME! Think about current and endOfLine in stringex.c
+	nextLength = searchString(current, pRequest, endOfLine, ":");
+	if(nextLength == -1){
+		fprintf(stderr, "Can not tokenize HTTP request(header name).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
+	
+	pPreviousHTTPRequestHeader->name = (char *)malloc(nextLength + 1);
+	if(pPreviousHTTPRequestHeader->name == NULL){
+		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header name).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
+	
+	memset(pPreviousHTTPRequestHeader->name, 0, (nextLength + 1));
+	memmove(pPreviousHTTPRequestHeader->name, (pRequest + current), nextLength);
+	
+	current += nextLength + 2;
+	
+	//Get HTTP request header value
+	nextLength = endOfLine - (nextLength + 2);
+	
+	pPreviousHTTPRequestHeader->value = (char *)malloc(nextLength + 1);
+	if(pPreviousHTTPRequestHeader->value == NULL){
+		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header value).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
+	
+	memset(pPreviousHTTPRequestHeader->value, 0, (nextLength + 1));
+	memmove(pPreviousHTTPRequestHeader->value, (pRequest + current), nextLength);
+	
+	current += nextLength + 2;
+	
+	fprintf(stderr, "%s", pPreviousHTTPRequestHeader->value);
+	
 	return pHTTPRequest;
 }
 
@@ -242,13 +282,16 @@ void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	free(pHTTPRequest->method);
 	free(pHTTPRequest->path);
 	free(pHTTPRequest->version);
-
 	//Free HTTPREQUESTHEADERs
 	pHTTPRequestHeader = pHTTPRequest->header;
 	
 	while(1){
 		if(pHTTPRequestHeader != NULL){
+			free(pHTTPRequestHeader->name);
+			free(pHTTPRequestHeader->value);
+			
 			pNextHTTPRequestHeader = pHTTPRequestHeader->next;
+			
 			free(pHTTPRequestHeader);
 		}else{
 			break;
