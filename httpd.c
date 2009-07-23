@@ -7,19 +7,6 @@
 #include "stringex.h"
 #include "httpd.h"
 
-
-typedef struct tagHTTPREQUESTHEADER{
-	char *name;
-	char *value;
-	struct tagHTTPREQUESTHEADER *next;
-}HTTPREQUESTHEADER;
-
-typedef struct tagHTTPREQUEST{
-	char *method;
-	char *path;
-	char *version;
-} HTTPREQUEST;
-
 void __cdecl HTTPServerDaemonThread(void *p);
 void __cdecl HTTPServerRequestThread(void *p);
 HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength);
@@ -122,13 +109,20 @@ void __cdecl HTTPServerRequestThread(void *p){
 //HTTP request tokenizer
 HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	HTTPREQUEST *pHTTPRequest;
-	int endOfLine,current,nextLength;
+	HTTPREQUESTHEADER *pPreviousHTTPRequestHeader;
+	int endOfLine, endOfRequestHeaders, current, nextLength;
 	
+	
+	//Alloc HTTP request struct
 	pHTTPRequest = (HTTPREQUEST *)malloc(sizeof(HTTPREQUEST));
 	if(pHTTPRequest == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer.\n");
 		return NULL;
 	}
+	
+	pHTTPRequest->method = NULL;
+	pHTTPRequest->path = NULL;
+	pHTTPRequest->version = NULL;
 	
 	current = 0;
 	
@@ -137,8 +131,9 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	//Get the end of line
 	endOfLine = searchString(0, pRequest, requestLength, "\r\n");
 	if(endOfLine == -1){
-		fprintf(stderr, "Can not tokenize HTTP request.\n");
-		free(pHTTPRequest);
+		fprintf(stderr, "Can not tokenize HTTP request(end of first line).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -146,14 +141,16 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	nextLength = searchString(0, pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(method name).\n");
-		free(pHTTPRequest);
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
 	pHTTPRequest->method = (char *)malloc(nextLength + 1);
 	if(pHTTPRequest->method == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(method name).\n");
-		free(pHTTPRequest);
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -166,14 +163,16 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	nextLength = searchString(current, pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(path).\n");
-		free(pHTTPRequest);
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
 	pHTTPRequest->path = (char *)malloc(nextLength + 1);
 	if(pHTTPRequest->path == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(path).\n");
-		free(pHTTPRequest);
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -187,7 +186,8 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	pHTTPRequest->version = (char *)malloc(nextLength + 1);
 	if(pHTTPRequest->version == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(HTTP version).\n");
-		free(pHTTPRequest);
+		
+		freeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -200,8 +200,43 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	
 	//Get HTTP request headers
 	
+	//Get end of request headers
+	endOfRequestHeaders = searchString(current, pRequest, requestLength, "\r\n\r\n");
+	if(endOfRequestHeaders == -1){
+		fprintf(stderr, "Can not tokenize HTTP request(end of request header).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
 	
+	endOfRequestHeaders -= 2;
+	
+	//Alloc HTTP request header struct
+	pPreviousHTTPRequestHeader = (HTTPREQUESTHEADER *)malloc(sizeof(HTTPREQUESTHEADER));
+	if(pHTTPRequest == NULL){
+		fprintf(stderr, "Can not alloc HTTP request header tokenize buffer.\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
+	
+	//Get end of line
+	endOfLine = searchString(current, pRequest, endOfRequestHeaders, "\r\n");
+	if(endOfLine == -1){
+		fprintf(stderr, "Can not tokenize HTTP request(end of request header line).\n");
+		
+		freeHTTPRequest(pHTTPRequest);
+		return NULL;
+	}
 	
 	return pHTTPRequest;
 }
 
+void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
+	free(pHTTPRequest->method);
+	free(pHTTPRequest->path);
+	free(pHTTPRequest->version);
+	
+	free(pHTTPRequest);
+	return;
+}
