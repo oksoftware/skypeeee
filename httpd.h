@@ -14,3 +14,4 @@ typedef struct tagHTTPREQUEST{
 
 int StartHTTPServerDaemon();
 void freeHTTPRequest(HTTPREQUEST *pHTTPRequest);
+char *searchHTTPRequestHeader(HTTPREQUEST *pHTTPRequest,char *needle);

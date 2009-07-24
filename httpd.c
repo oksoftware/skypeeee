@@ -307,6 +307,7 @@ void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	free(pHTTPRequest->method);
 	free(pHTTPRequest->path);
 	free(pHTTPRequest->version);
+	
 	//Free HTTPREQUESTHEADERs
 	pHTTPRequestHeader = pHTTPRequest->header;
 	
@@ -327,5 +328,24 @@ void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	free(pHTTPRequest->header);
 	free(pHTTPRequest->body);
 	free(pHTTPRequest);
+	
 	return;
+}
+
+char *searchHTTPRequestHeader(HTTPREQUEST *pHTTPRequest,char *needle){
+	HTTPREQUESTHEADER *pHTTPRequestHeader = NULL;
+	
+	pHTTPRequestHeader = pHTTPRequest->header;
+	
+	while(1){
+		if(pHTTPRequestHeader == NULL){
+			return NULL;
+		}
+		
+		if(strcmp(pHTTPRequestHeader->name, needle) == 0){
+			return pHTTPRequestHeader->value;
+		}
+		
+		pHTTPRequestHeader = pHTTPRequestHeader->next;
+	}
 }
