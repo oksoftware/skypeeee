@@ -88,6 +88,8 @@ void __cdecl HTTPServerRequestThread(void *p){
 	char recvBuf[30*1024];
 	int recvSize = 0;
 	SOCKET clientSock;
+	HTTPREQUEST *pHTTPRequest = NULL;
+	
 	clientSock = (SOCKET)p;
 	
 	memset(recvBuf, 0,  sizeof(recvBuf));
@@ -98,9 +100,7 @@ void __cdecl HTTPServerRequestThread(void *p){
 		return;
 	}
 	
-	fprintf(stderr, "%s", recvBuf);
-	
-	HTTPRequestTokenizer(recvBuf, recvSize);
+	pHTTPRequest = HTTPRequestTokenizer(recvBuf, recvSize);
 	
 	closesocket(clientSock);
 	return;
@@ -280,8 +280,6 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		memset(pHTTPRequestHeader->value, 0, (nextLength + 1));
 		memmove(pHTTPRequestHeader->value, (pRequest + current), nextLength);
 		
-		
-		fprintf(stderr, "name:%s value:%s\n",pHTTPRequestHeader->name,pHTTPRequestHeader->value);
 		current += nextLength + 2;
 	}
 	
