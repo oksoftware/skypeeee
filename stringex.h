@@ -1,1 +1,1 @@
-int searchString(const char *haystack, size_t haystackLength, const char *needle);
+int SearchString(const char *haystack, size_t haystackLength, const char *needle);

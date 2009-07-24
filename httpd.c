@@ -131,20 +131,20 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	//Start-line tokenize
 	
 	//Get the end of line
-	endOfLine = searchString(pRequest, requestLength, "\r\n");
+	endOfLine = SearchString(pRequest, requestLength, "\r\n");
 	if(endOfLine == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(end of first line).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
 	//Get request method
-	nextLength = searchString(pRequest, endOfLine, " ");
+	nextLength = SearchString(pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(method name).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -152,7 +152,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	if(pHTTPRequest->method == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(method name).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -162,11 +162,11 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	current = nextLength + 1;
 	
 	//Get request path
-	nextLength = searchString((pRequest + current), (endOfLine - current), " ");
+	nextLength = SearchString((pRequest + current), (endOfLine - current), " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(path).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -174,7 +174,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	if(pHTTPRequest->path == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(path).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -189,7 +189,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	if(pHTTPRequest->version == NULL){
 		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(HTTP version).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -201,11 +201,11 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	//Get HTTP request headers
 	
 	//Get end of request headers
-	endOfRequestHeaders = searchString((pRequest + current), (requestLength - current), "\r\n\r\n");
+	endOfRequestHeaders = SearchString((pRequest + current), (requestLength - current), "\r\n\r\n");
 	if(endOfRequestHeaders == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(end of request header).\n");
 		
-		freeHTTPRequest(pHTTPRequest);
+		FreeHTTPRequest(pHTTPRequest);
 		return NULL;
 	}
 	
@@ -224,7 +224,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		if(pHTTPRequest == NULL){
 			fprintf(stderr, "Can not alloc HTTP request header tokenize buffer.\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
@@ -237,20 +237,20 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		pPreviousHTTPRequestHeader = &pHTTPRequestHeader->next;
 		
 		//Get end of line
-		endOfLine = searchString((pRequest + current), (endOfRequestHeaders - current), "\r\n");
+		endOfLine = SearchString((pRequest + current), (endOfRequestHeaders - current), "\r\n");
 		if(endOfLine == -1){
 			fprintf(stderr, "Can not tokenize HTTP request(end of request header line).\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
 		//Get HTTP request header name
-		nextLength = searchString((pRequest + current), endOfLine, ": ");
+		nextLength = SearchString((pRequest + current), endOfLine, ": ");
 		if(nextLength == -1){
 			fprintf(stderr, "Can not tokenize HTTP request(header name).\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
@@ -258,7 +258,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		if(pHTTPRequestHeader->name == NULL){
 			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header name).\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
@@ -274,7 +274,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		if(pHTTPRequestHeader->value == NULL){
 			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header value).\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
@@ -291,7 +291,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		if(pHTTPRequest->body == NULL){
 			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(body).\n");
 			
-			freeHTTPRequest(pHTTPRequest);
+			FreeHTTPRequest(pHTTPRequest);
 			return NULL;
 		}
 		
@@ -302,7 +302,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	return pHTTPRequest;
 }
 
-void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
+void FreeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	HTTPREQUESTHEADER *pNextHTTPRequestHeader, *pHTTPRequestHeader;
 	free(pHTTPRequest->method);
 	free(pHTTPRequest->path);
@@ -332,7 +332,7 @@ void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	return;
 }
 
-char *searchHTTPRequestHeader(HTTPREQUEST *pHTTPRequest,char *needle){
+char *SearchHTTPRequestHeader(HTTPREQUEST *pHTTPRequest,char *needle){
 	HTTPREQUESTHEADER *pHTTPRequestHeader = NULL;
 	
 	pHTTPRequestHeader = pHTTPRequest->header;
