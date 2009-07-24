@@ -109,7 +109,7 @@ void __cdecl HTTPServerRequestThread(void *p){
 //HTTP request tokenizer
 HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	HTTPREQUEST *pHTTPRequest;
-	HTTPREQUESTHEADER *pPreviousHTTPRequestHeader;
+	HTTPREQUESTHEADER *pHTTPRequestHeader, **pPreviousHTTPRequestHeader;
 	int endOfLine, endOfRequestHeaders, current, nextLength;
 	
 	
@@ -208,70 +208,82 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		return NULL;
 	}
 	
-	endOfRequestHeaders -= 2;
-	endOfRequestHeaders += current;
+	endOfRequestHeaders += current + 2;
 	
-	//Alloc HTTP request header struct
-	pPreviousHTTPRequestHeader = (HTTPREQUESTHEADER *)malloc(sizeof(HTTPREQUESTHEADER));
-	if(pHTTPRequest == NULL){
-		fprintf(stderr, "Can not alloc HTTP request header tokenize buffer.\n");
+	pPreviousHTTPRequestHeader = &pHTTPRequest->header;
+	
+	while(1){
+		if(current >= endOfRequestHeaders){
+			*pPreviousHTTPRequestHeader = NULL;
+			break;
+		}
 		
-		freeHTTPRequest(pHTTPRequest);
-		return NULL;
-	}
-	
-	pHTTPRequest->header = pPreviousHTTPRequestHeader;
-	
-	pPreviousHTTPRequestHeader->name = NULL;
-	pPreviousHTTPRequestHeader->value = NULL;
-	pPreviousHTTPRequestHeader->next = NULL;
-	
-	//Get end of line
-	endOfLine = searchString((pRequest + current), (endOfRequestHeaders - current), "\r\n");
-	if(endOfLine == -1){
-		fprintf(stderr, "Can not tokenize HTTP request(end of request header line).\n");
+		//Alloc HTTP request header struct
+		pHTTPRequestHeader = (HTTPREQUESTHEADER *)malloc(sizeof(HTTPREQUESTHEADER));
+		if(pHTTPRequest == NULL){
+			fprintf(stderr, "Can not alloc HTTP request header tokenize buffer.\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
 		
-		freeHTTPRequest(pHTTPRequest);
-		return NULL;
-	}
-	
-	//Get HTTP request header name
-	nextLength = searchString((pRequest + current), endOfLine, ": ");
-	if(nextLength == -1){
-		fprintf(stderr, "Can not tokenize HTTP request(header name).\n");
+		*pPreviousHTTPRequestHeader = pHTTPRequestHeader;
 		
-		freeHTTPRequest(pHTTPRequest);
-		return NULL;
-	}
-	
-	pPreviousHTTPRequestHeader->name = (char *)malloc(nextLength + 1);
-	if(pPreviousHTTPRequestHeader->name == NULL){
-		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header name).\n");
+		pHTTPRequestHeader->name = NULL;
+		pHTTPRequestHeader->value = NULL;
+		pHTTPRequestHeader->next = NULL;
 		
-		freeHTTPRequest(pHTTPRequest);
-		return NULL;
-	}
-	
-	memset(pPreviousHTTPRequestHeader->name, 0, (nextLength + 1));
-	memmove(pPreviousHTTPRequestHeader->name, (pRequest + current), nextLength);
-	
-	current += nextLength + 2;
-	
-	//Get HTTP request header value
-	nextLength = endOfLine - (nextLength + 2);
-	
-	pPreviousHTTPRequestHeader->value = (char *)malloc(nextLength + 1);
-	if(pPreviousHTTPRequestHeader->value == NULL){
-		fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header value).\n");
+		pPreviousHTTPRequestHeader = &pHTTPRequestHeader->next;
 		
-		freeHTTPRequest(pHTTPRequest);
-		return NULL;
+		//Get end of line
+		endOfLine = searchString((pRequest + current), (endOfRequestHeaders - current), "\r\n");
+		if(endOfLine == -1){
+			fprintf(stderr, "Can not tokenize HTTP request(end of request header line).\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
+		
+		//Get HTTP request header name
+		nextLength = searchString((pRequest + current), endOfLine, ": ");
+		if(nextLength == -1){
+			fprintf(stderr, "Can not tokenize HTTP request(header name).\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
+		
+		pHTTPRequestHeader->name = (char *)malloc(nextLength + 1);
+		if(pHTTPRequestHeader->name == NULL){
+			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header name).\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
+		
+		memset(pHTTPRequestHeader->name, 0, (nextLength + 1));
+		memmove(pHTTPRequestHeader->name, (pRequest + current), nextLength);
+		
+		current += nextLength + 2;
+		
+		//Get HTTP request header value
+		nextLength = endOfLine - (nextLength + 2);
+		
+		pHTTPRequestHeader->value = (char *)malloc(nextLength + 1);
+		if(pHTTPRequestHeader->value == NULL){
+			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(header value).\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
+		
+		memset(pHTTPRequestHeader->value, 0, (nextLength + 1));
+		memmove(pHTTPRequestHeader->value, (pRequest + current), nextLength);
+		
+		
+		fprintf(stderr, "name:%s value:%s\n",pHTTPRequestHeader->name,pHTTPRequestHeader->value);
+		current += nextLength + 2;
 	}
-	
-	memset(pPreviousHTTPRequestHeader->value, 0, (nextLength + 1));
-	memmove(pPreviousHTTPRequestHeader->value, (pRequest + current), nextLength);
-	
-	current += nextLength + 2;
 	
 	return pHTTPRequest;
 }
