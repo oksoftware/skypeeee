@@ -130,7 +130,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	//Start-line tokenize
 	
 	//Get the end of line
-	endOfLine = searchString(0, pRequest, requestLength, "\r\n");
+	endOfLine = searchString(pRequest, requestLength, "\r\n");
 	if(endOfLine == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(end of first line).\n");
 		
@@ -139,7 +139,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	}
 	
 	//Get request method
-	nextLength = searchString(0, pRequest, endOfLine, " ");
+	nextLength = searchString(pRequest, endOfLine, " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(method name).\n");
 		
@@ -161,7 +161,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	current = nextLength + 1;
 	
 	//Get request path
-	nextLength = searchString(current, pRequest, endOfLine, " ");
+	nextLength = searchString((pRequest + current), (endOfLine - current), " ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(path).\n");
 		
@@ -196,10 +196,11 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	memmove(pHTTPRequest->version, (pRequest + current), nextLength);
 	
 	current += nextLength + 2;
+	
 	//Get HTTP request headers
 	
 	//Get end of request headers
-	endOfRequestHeaders = searchString(current, pRequest, requestLength, "\r\n\r\n");
+	endOfRequestHeaders = searchString((pRequest + current), (requestLength - current), "\r\n\r\n");
 	if(endOfRequestHeaders == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(end of request header).\n");
 		
@@ -208,6 +209,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	}
 	
 	endOfRequestHeaders -= 2;
+	endOfRequestHeaders += current;
 	
 	//Alloc HTTP request header struct
 	pPreviousHTTPRequestHeader = (HTTPREQUESTHEADER *)malloc(sizeof(HTTPREQUESTHEADER));
@@ -225,7 +227,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	pPreviousHTTPRequestHeader->next = NULL;
 	
 	//Get end of line
-	endOfLine = searchString(current, pRequest, endOfRequestHeaders, "\r\n");
+	endOfLine = searchString((pRequest + current), (endOfRequestHeaders - current), "\r\n");
 	if(endOfLine == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(end of request header line).\n");
 		
@@ -234,8 +236,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	}
 	
 	//Get HTTP request header name
-	//FIXME! Think about current and endOfLine in stringex.c
-	nextLength = searchString(current, pRequest, endOfLine, ":");
+	nextLength = searchString((pRequest + current), endOfLine, ": ");
 	if(nextLength == -1){
 		fprintf(stderr, "Can not tokenize HTTP request(header name).\n");
 		
@@ -271,8 +272,6 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	memmove(pPreviousHTTPRequestHeader->value, (pRequest + current), nextLength);
 	
 	current += nextLength + 2;
-	
-	fprintf(stderr, "%s", pPreviousHTTPRequestHeader->value);
 	
 	return pHTTPRequest;
 }
