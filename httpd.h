@@ -9,6 +9,7 @@ typedef struct tagHTTPREQUEST{
 	char *path;
 	char *version;
 	HTTPREQUESTHEADER *header;
+	unsigned char *body;
 } HTTPREQUEST;
 
 int StartHTTPServerDaemon();

@@ -124,6 +124,7 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 	pHTTPRequest->path = NULL;
 	pHTTPRequest->version = NULL;
 	pHTTPRequest->header = NULL;
+	pHTTPRequest->body = NULL;
 	
 	current = 0;
 	
@@ -283,6 +284,21 @@ HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength){
 		current += nextLength + 2;
 	}
 	
+	current += 2;
+	
+	if((requestLength - current) != 0){
+		pHTTPRequest->body = (char *)malloc(requestLength - current + 1);
+		if(pHTTPRequest->body == NULL){
+			fprintf(stderr, "Can not alloc HTTP request tokenize buffer(body).\n");
+			
+			freeHTTPRequest(pHTTPRequest);
+			return NULL;
+		}
+		
+		memset(pHTTPRequestHeader->value, 0, (requestLength - current + 1));
+		memmove(pHTTPRequestHeader->value, (pRequest + current), (requestLength - current));
+	}
+	
 	return pHTTPRequest;
 }
 
@@ -309,6 +325,7 @@ void freeHTTPRequest(HTTPREQUEST *pHTTPRequest){
 	}
 	
 	free(pHTTPRequest->header);
+	free(pHTTPRequest->body);
 	free(pHTTPRequest);
 	return;
 }
