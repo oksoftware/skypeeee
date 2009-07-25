@@ -67,7 +67,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 						g_hSkypeAPIWindow = (HWND)wParam;
 						
 						//Starting HTTP server daemon
-						StartHTTPServerDaemon();
+						if(StartHTTPServerDaemon(8080, NULL) == -1){
+							DestroyWindow(g_hWnd);
+						}
 						break;
 					
 					case SKYPECONTROLAPI_ATTACH_PENDING_AUTHORIZATION:

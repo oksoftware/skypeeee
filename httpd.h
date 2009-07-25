@@ -9,9 +9,9 @@ typedef struct tagHTTPREQUEST{
 	char *path;
 	char *version;
 	HTTPREQUESTHEADER *header;
-	unsigned char *body;
+	char *body;
 } HTTPREQUEST;
 
-int StartHTTPServerDaemon();
+int StartHTTPServerDaemon(unsigned short port, char *(*pRequestCallback)(HTTPREQUEST *pHTTPRequest));
 void FreeHTTPRequest(HTTPREQUEST *pHTTPRequest);
 char *SearchHTTPRequestHeader(HTTPREQUEST *pHTTPRequest,char *needle);

@@ -7,33 +7,62 @@
 #include "stringex.h"
 #include "httpd.h"
 
+typedef struct tagHTTPSERVERCONFIG{
+	unsigned short port;
+	char *(*pRequestCallback)(HTTPREQUEST *pHTTPRequest);
+}HTTPSERVERCONFIG;
+
+typedef struct tagHTTPREQUESTCONFIG{
+	SOCKET clientSock;
+	char *(*pRequestCallback)(HTTPREQUEST *pHTTPRequest);
+}HTTPREQUESTCONFIG;
+
 void __cdecl HTTPServerDaemonThread(void *p);
 void __cdecl HTTPServerRequestThread(void *p);
 HTTPREQUEST *HTTPRequestTokenizer(const char *pRequest, int requestLength);
 
 //Starting HTTP server daemon thread
-int StartHTTPServerDaemon(){
-	if(_beginthread(&HTTPServerDaemonThread, 0, NULL) == (unsigned)-1){
-		fprintf(stderr, "HTTP server daemon thread starting error.\n");
+int StartHTTPServerDaemon(unsigned short port, char *(*pRequestCallback)(HTTPREQUEST *pHTTPRequest)){
+	HTTPSERVERCONFIG *pHTTPServerConfig;
+	
+	if(pRequestCallback == NULL){
+		fprintf(stderr, "No HTTP request callback function.\n");
 		return -1;
 	}
 	
+	pHTTPServerConfig = (HTTPSERVERCONFIG *)malloc(sizeof(HTTPSERVERCONFIG));
+	if(pHTTPServerConfig == NULL){
+		fprintf(stderr, "Can not alloc HTTP server config buffer.\n");
+		return -1;
+	}
+	
+	pHTTPServerConfig->port = port;
+	pHTTPServerConfig->pRequestCallback = pRequestCallback;
+	
+	if(_beginthread(&HTTPServerDaemonThread, 0, (void *)pHTTPServerConfig) == (unsigned)-1){
+		fprintf(stderr, "HTTP server daemon thread starting error.\n");
+		return -1;
+	}
 	
 	return 0;
 }
 
 //HTTP server daemon thread
 void __cdecl HTTPServerDaemonThread(void *p){
+	HTTPSERVERCONFIG *pHTTPServerConfig;
+	HTTPREQUESTCONFIG *pHTTPRequestConfig;
 	WSADATA wsaData;
 	SOCKET listenSock, clientSock;
 	struct sockaddr_in addr, clientAddr;
 	int length;
 	BOOL YES = 1;
-	//struct sockaddr_in 
+	
+	pHTTPServerConfig = p;
 	
 	//Startup Winsock
 	if(WSAStartup(MAKEWORD(2, 0), &wsaData) != 0){
 		fprintf(stderr, "Winsock startup error.\n");
+		free(pHTTPServerConfig);
 		return;
 	}
 	
@@ -41,11 +70,12 @@ void __cdecl HTTPServerDaemonThread(void *p){
 	listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(listenSock == INVALID_SOCKET){
 		fprintf(stderr, "Invalid socket.\n");
+		free(pHTTPServerConfig);
 		return;
 	}
 	
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8080);
+	addr.sin_port = htons(pHTTPServerConfig->port);
 	addr.sin_addr.S_un.S_addr = INADDR_ANY;
 	
 	//Set socket option
@@ -53,11 +83,13 @@ void __cdecl HTTPServerDaemonThread(void *p){
 	
 	if(bind(listenSock, (struct sockaddr *)&addr, sizeof(addr)) != 0){
 		fprintf(stderr, "Winsock binding error.\n");
+		free(pHTTPServerConfig);
 		return;
 	}
 	
 	if(listen(listenSock, 5) != 0){
 		fprintf(stderr, "Winsock listening error.\n");
+		free(pHTTPServerConfig);
 		return;
 	}
 	
@@ -70,12 +102,23 @@ void __cdecl HTTPServerDaemonThread(void *p){
 			break;
 		}
 		
+		pHTTPRequestConfig = (HTTPREQUESTCONFIG *)malloc(sizeof(HTTPREQUESTCONFIG));
+		if(pHTTPRequestConfig == NULL){
+			fprintf(stderr, "Can not alloc HTTP request config buffer.\n");
+			break;
+		}
+		
+		pHTTPRequestConfig->clientSock = clientSock;
+		pHTTPRequestConfig->pRequestCallback = pHTTPServerConfig->pRequestCallback;
+		
 		//Starting HTTP server request thread
-		if(_beginthread(&HTTPServerRequestThread, 0, (void *)clientSock) == (unsigned)-1){
+		if(_beginthread(&HTTPServerRequestThread, 0, (void *)pHTTPRequestConfig) == (unsigned)-1){
 			fprintf(stderr, "HTTP server request thread starting error.\n");
 			break;
 		}
 	}
+	
+	free(pHTTPServerConfig);
 	
 	WSACleanup();
 	
@@ -85,24 +128,32 @@ void __cdecl HTTPServerDaemonThread(void *p){
 
 //HTTP server daemon request thread
 void __cdecl HTTPServerRequestThread(void *p){
+	HTTPREQUESTCONFIG *pHTTPRequestConfig;
 	char recvBuf[30*1024];
 	int recvSize = 0;
 	SOCKET clientSock;
 	HTTPREQUEST *pHTTPRequest = NULL;
 	
-	clientSock = (SOCKET)p;
+	pHTTPRequestConfig = p;
+	
+	clientSock = (SOCKET)pHTTPRequestConfig->clientSock;
 	
 	memset(recvBuf, 0,  sizeof(recvBuf));
 	
 	recvSize = recv(clientSock, recvBuf, sizeof(recvBuf), 0);
 	if(recvSize >= sizeof(recvBuf)){
 		fprintf(stderr, "HTTP request too long.\n");
+		free(pHTTPRequestConfig);
 		return;
 	}
 	
 	pHTTPRequest = HTTPRequestTokenizer(recvBuf, recvSize);
 	
+	pHTTPRequestConfig->pRequestCallback(pHTTPRequest);
+	
 	closesocket(clientSock);
+	
+	free(pHTTPRequestConfig);
 	return;
 }
 
