@@ -3,6 +3,7 @@
 
 #include "strque.h"
 #include "httpd.h"
+#include "httpdcallback.h"
 
 //Skype control API's Constant
 enum {
@@ -67,7 +68,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 						g_hSkypeAPIWindow = (HWND)wParam;
 						
 						//Starting HTTP server daemon
-						if(StartHTTPServerDaemon(8080, NULL) == -1){
+						if(StartHTTPServerDaemon(8080, &RequestCallback) == -1){
 							DestroyWindow(g_hWnd);
 						}
 						break;
