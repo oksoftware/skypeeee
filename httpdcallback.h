@@ -1,0 +1,1 @@
+char *RequestCallback(HTTPREQUEST *pHTTPRequest);

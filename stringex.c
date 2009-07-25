@@ -1,5 +1,6 @@
 #include <string.h>
 #include <malloc.h>
+#include <stdio.h>
 
 #include "stringex.h"
 
@@ -23,15 +24,6 @@ int SearchString(const char *haystack, size_t haystackLength, const char *needle
 }
 
 char *AddString(char *dest, char *src){
-	char *_dest;
-	
-	_dest = dest;
-	_dest = realloc(_dest, (strlen(_dest) + strlen(src) + 1));
-	if(_dest == NULL){
-		return NULL;
-	}
-	
-	strcat(_dest, src);
-	
-	return _dest;
+	//FIXME!Implementation
+	return dest;
 }
